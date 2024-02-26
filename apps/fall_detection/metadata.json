@@ -1,0 +1,15 @@
+{
+    "id": "fall_detection",
+    "name": "Fall Detection",
+    "shortName": "Fall Detection",
+    "version": "0.01",
+    "description": "Advertises HRM, GPS and Accelerometer data over BLE. Runs a fall detection algorithm.\n",
+    "icon": "smartwatch.png",
+    "type": "bootloader",
+    "tags": "hrm,gps,accelerometer,fall,gatt",
+    "supports": ["BANGLEJS","BANGLEJS2"],
+    "readme": "README.md",
+    "storage": [
+      {"name":"fall_detection.boot.js","url":"boot.js"}
+    ]
+  }
