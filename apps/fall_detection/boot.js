@@ -1,8 +1,11 @@
 (() => {
   const HR_SERVICE = 0x180D;
   const HR_UUID = 0x2A37;
+
   const MOTION_SERVICE = 0xFFA0;
-  const MOTION_UUID = 0xFFA3;
+  const MOTION_ABS_UUID = 0xFFA3;
+  const MOTION_Z_UUID = 0xFFA4;
+
   const GPS_SERVICE = 0x1819;
   const LAT_UUID = 0x2AAE;
   const LON_UUID = 0x2AAF;
@@ -54,6 +57,10 @@
       },
       0xFFA0: {
         0xFFA3: {
+          value: 0,
+          notify: true,
+        },
+        0xFFA4: {
           value: 0,
           notify: true,
         }
@@ -162,6 +169,10 @@
           0xFFA3: {
             value: abs_acc,
             notify: true
+          },
+          0xFFA4: {
+            value: Math.round(xyz.z * 100),
+            notify: true,
           }
         }
       });
