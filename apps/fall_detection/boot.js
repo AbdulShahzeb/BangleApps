@@ -12,6 +12,7 @@
 
   var impact = 0, no_motion = 0, alert = 0;
   var motionTime = Date.now();
+  const GPS_PRECISION = 6;
   const WAITRESPONSE = 10000;
   const NO_MOTION_TRIG = 7500;
 
@@ -112,11 +113,11 @@
 
     var latBuffer = new ArrayBuffer(4);
     var latView = new Uint32Array(latBuffer);
-    latView[0] = Math.floor(fix.lat * 10000);
+    latView[0] = Math.floor(fix.lat * (10 ** GPS_PRECISION));
 
     var lonBuffer = new ArrayBuffer(4);
     var lonView = new Uint32Array(lonBuffer);
-    lonView[0] = Math.floor(fix.lon * 10000);
+    lonView[0] = Math.floor(fix.lon * (10 ** GPS_PRECISION));
 
     var timeBuffer = new ArrayBuffer(8);
     var timeView = new DataView(timeBuffer);
