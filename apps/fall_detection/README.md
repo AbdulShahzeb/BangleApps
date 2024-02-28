@@ -1,6 +1,6 @@
 # Fall Detection BLE
 
-Advertises HRM, GPS and Accelerometer data over BLE GATT. Runs a fall detection algorithm to determine when the wearer has had a critical fall.
+Advertises HRM, GPS and Fall Status data over BLE GATT. Runs a fall detection algorithm to determine whether the wearer has had a critical fall.
 
 ## Usage
 
