@@ -10,7 +10,10 @@
   const LON_UUID = 0x2AAF;
   const TIME_UUID = 0x2A2B;
 
-  var impact = 0, no_motion = 0, alert = 0;
+  const BARO_SERVICE_UUID = 0x181A;
+  const PRESSURE_UUID = 0x2A6D;
+
+  var impact = 0, no_motion = 0, alert = 0; pressure = 0;
   var motionTime = Date.now();
   const GPS_PRECISION = 6;
   const WAITRESPONSE = 10000;
@@ -25,6 +28,7 @@
       {
         0x180D: undefined,
         0x1819: undefined,
+        0x181A: undefined,
         0xFFA0: undefined,
       },
       {
@@ -62,6 +66,13 @@
           notify: true,
           readable: true,
           value: [0,0,0,0,0,0,0,0,0,0,0,0,0], // time
+        }
+      },
+      0x181A: { // barometer
+        0x2A6D: {
+          notify: true,
+          readable: true,
+          value: [0,0,0,0], // pressure
         }
       },
       0xFFA0: {
@@ -113,11 +124,11 @@
 
     var latBuffer = new ArrayBuffer(4);
     var latView = new Uint32Array(latBuffer);
-    latView[0] = Math.floor(fix.lat * (10 ** GPS_PRECISION));
+    latView[0] = Math.floor(fix.lat * Math.pow(10,GPS_PRECISION));
 
     var lonBuffer = new ArrayBuffer(4);
     var lonView = new Uint32Array(lonBuffer);
-    lonView[0] = Math.floor(fix.lon * (10 ** GPS_PRECISION));
+    lonView[0] = Math.floor(fix.lon * Math.pow(10, GPS_PRECISION));
 
     var timeBuffer = new ArrayBuffer(8);
     var timeView = new DataView(timeBuffer);
@@ -154,6 +165,35 @@
         NRF.disconnect();
       } else {
         console.log("[fall_detection]: Unexpected error occured while updating GPS over BLE! Error: " + error.message);
+      }
+    }
+  }
+
+  function updatePressure(e) {
+    /*
+     * Send updated pressure measurement via BLE
+     */
+
+    if (e === undefined) return;
+
+    var pressureBuf = new ArrayBuffer(4);
+    var pressureView = new Uint32Array(pressureBuf);
+    pressureView[0] = Math.round(e.pressure);
+
+    try {
+      NRF.updateServices({
+        0x181A: {
+          0x2A6D: {
+            value: pressureBuf,
+            notify: true
+          }
+        }
+      });
+    } catch (error) {
+      if (error.message.includes("BLE restart")) {
+        NRF.disconnect();
+      } else {
+        console.log("[fall_detection]: Unexpected error occured while updating Pressure over BLE! Error: " + error.message);
       }
     }
   }
@@ -248,9 +288,10 @@
   setupAdvertising();
   Bangle.setHRMPower(1);
   Bangle.setGPSPower(1);
+  Bangle.setBarometerPower(1);
   Bangle.on("HRM", function (hrm) { updateHRM(hrm); });
   setInterval(checkFall, 100);
   setInterval(updateMotion, 1000);
+  Bangle.on("pressure", function(e) { updatePressure(e); });
   Bangle.on("GPS", function(fix) { updateGPS(fix); });
-
 })();
