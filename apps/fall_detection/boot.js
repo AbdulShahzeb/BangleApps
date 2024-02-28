@@ -39,6 +39,7 @@
       0x180D: { // heart_rate
         0x2A37: {
           notify: true,
+          readable: true,
           value: [0x06, 0],
         },
         0x2A38: { // Sensor Location: Wrist
@@ -48,21 +49,25 @@
       0x1819: { // gps
         0x2AAE: {
           notify: true,
+          readable: true,
           value: [0,0,0,0], // lat
         },
         0x2AAF: {
           notify: true,
+          readable: true,
           value: [0,0,0,0], // lon
         },
         0x2A2B: {
           notify: true,
+          readable: true,
           value: [0,0,0,0,0,0,0,0,0,0,0,0,0], // time
         }
       },
       0xFFA0: {
         0xFFA3: {
-          value: [0,0,0], // impact, no_motion, alert
           notify: true,
+          readable: true,
+          value: [0,0,0], // impact, no_motion, alert
         }
       }
     });
