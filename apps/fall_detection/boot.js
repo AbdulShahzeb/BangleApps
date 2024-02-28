@@ -3,13 +3,17 @@
   const HR_UUID = 0x2A37;
 
   const MOTION_SERVICE = 0xFFA0;
-  const MOTION_ABS_UUID = 0xFFA3;
-  const MOTION_Z_UUID = 0xFFA4;
+  const MOTION_UUID = 0xFFA3;
 
   const GPS_SERVICE = 0x1819;
   const LAT_UUID = 0x2AAE;
   const LON_UUID = 0x2AAF;
   const TIME_UUID = 0x2A2B;
+
+  var impact = 0, no_motion = 0, alert = 0;
+  var motionTime = Date.now();
+  const WAITRESPONSE = 10000;
+  const NO_MOTION_TRIG = 7500;
 
   function setupAdvertising() {
     /*
@@ -57,11 +61,7 @@
       },
       0xFFA0: {
         0xFFA3: {
-          value: 0,
-          notify: true,
-        },
-        0xFFA4: {
-          value: 0,
+          value: [0,0,0], // impact, no_motion, alert
           notify: true,
         }
       }
@@ -152,27 +152,49 @@
     }
   }
 
-  function updateMotion(xyz) {
-    if (xyz === undefined) return;
+  function checkFall() {
+    var a = Bangle.getAccel();
 
+    // High accel in z direction could be a sign of fall
+    var z = Math.round(a.z*100);
+
+    // Absolute acceleration in all directions
     var d2 = [
-      Math.round(xyz.x*100) * Math.round(xyz.x*100),
-      Math.round(xyz.y*100) * Math.round(xyz.y*100),
-      Math.round(xyz.z*100) * Math.round(xyz.z*100)
-    ];
-    var abs_acc = Math.sqrt(d2[0] + d2[1] + d2[2]) - 100;
-    if (abs_acc < 0) { abs_acc = 0; }
+      Math.round(a.x*100) * Math.round(a.x*100),
+      Math.round(a.y*100) * Math.round(a.y*100),
+      Math.round(a.z*100) * Math.round(a.z*100)
+      ];
+
+    var movement = Math.sqrt(d2[0] + d2[1] + d2[2]) - 100;
+
+    // If high abs accel AND high z-axis accel, it could be a fall
+    if (impact == 0 && movement > 175 && Math.abs(z) > 175) {
+        impact = 1;
+        respondToFall();
+    }
+
+    if (movement > 10) {
+      motionTime = Date.now();
+      no_motion = 0;
+    } else if (Date.now() - motionTime > NO_MOTION_TRIG) {
+      no_motion = 1;
+    }
+  }
+
+  function updateMotion() {
+
+    if (impact && no_motion) {
+      alert = 1;
+    } else {
+      alert = 0;
+    }
 
     try {
       NRF.updateServices({
         0xFFA0: {
           0xFFA3: {
-            value: abs_acc,
+            value: [impact, no_motion, alert],
             notify: true
-          },
-          0xFFA4: {
-            value: Math.round(xyz.z * 100),
-            notify: true,
           }
         }
       });
@@ -186,11 +208,43 @@
   }
 
 
+  // restart algorithm
+  function falseAlarm() {
+    g.clear();
+    Bangle.buzz();
+    impact = 0;
+  }
+
+  // Function to respond to fall with BUTTON press
+  function respondToFall() {
+
+    Bangle.buzz(2000);
+
+    // If button pressed, continue fall detection algorithm
+    // else start transmitting biometrics
+    Bangle.setLocked(false);
+    E.showMessage("Have you fallen?\n Press BTN for NO!");
+    var startTime = Date.now();
+    var endTime = startTime + WAITRESPONSE;
+
+    while (Date.now() < endTime) {
+      if (BTN.read()) {
+        falseAlarm();
+        return;
+      }
+    }
+
+    Bangle.buzz();
+    E.showMessage("Impact Alert!");
+  }
+
+
   setupAdvertising();
   Bangle.setHRMPower(1);
   Bangle.setGPSPower(1);
   Bangle.on("HRM", function (hrm) { updateHRM(hrm); });
-  Bangle.on("accel", function (xyz) { updateMotion(xyz); });
+  setInterval(checkFall, 100);
+  setInterval(updateMotion, 1000);
   Bangle.on("GPS", function(fix) { updateGPS(fix); });
 
 })();
